@@ -5,9 +5,9 @@
 >
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>de.unkrig.jsonpatch</groupId>
+	<groupId>de.unkrig.json-patch</groupId>
 	<artifactId>json-patch</artifactId>
-	<version>0.0.2-SNAPSHOT</version>
+	<version>0.0.2</version>
 
 	<name>json-patch</name>
 	<url>https://unkrig.de/</url>
@@ -26,6 +26,13 @@
 		<dependency><groupId>de.unkrig.commons</groupId><artifactId>commons-file</artifactId><version>1.2.19-SNAPSHOT</version></dependency>
 		<dependency><groupId>de.unkrig.commons</groupId><artifactId>commons-io</artifactId><version>1.2.19-SNAPSHOT</version></dependency>
 	</dependencies>
+
+	<distributionManagement>
+		<snapshotRepository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
 
 	<build>
 		<plugins>
