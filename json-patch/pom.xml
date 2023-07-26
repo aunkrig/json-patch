@@ -1,0 +1,249 @@
+<project
+	xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+>
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>de.unkrig.jsonpatch</groupId>
+	<artifactId>json-patch</artifactId>
+	<version>0.0.2-SNAPSHOT</version>
+
+	<name>json-patch</name>
+	<url>https://unkrig.de/</url>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>11</maven.compiler.source>
+		<maven.compiler.target>11</maven.compiler.target>
+		<jar-with-dependencies.mainClass>de.unkrig.zz.jsonpatch.Main</jar-with-dependencies.mainClass>
+		<jar-with-dependencies.mainClass2>de/unkrig/zz/jsonpatch/Main</jar-with-dependencies.mainClass2>
+	</properties>
+
+	<dependencies>
+		<dependency><groupId>com.google.code.gson</groupId><artifactId>gson</artifactId><version>2.10.1</version></dependency>
+
+		<dependency><groupId>de.unkrig.commons</groupId><artifactId>commons-file</artifactId><version>1.2.19-SNAPSHOT</version></dependency>
+		<dependency><groupId>de.unkrig.commons</groupId><artifactId>commons-io</artifactId><version>1.2.19-SNAPSHOT</version></dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+
+			<!--
+				Create the "...-jar-with-dependencies.jar" archive for "java -jar".
+			-->
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.6</version>
+				<configuration>
+					<descriptorRefs><descriptorRef>jar-with-dependencies</descriptorRef></descriptorRefs>
+					<archive>
+						<manifest>
+							<mainClass>${jar-with-dependencies.mainClass}</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-jar-with-dependencies</id>
+						<phase>package</phase>
+						<goals><goal>single</goal></goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Creates and attaches a JAR file containing the sources. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>2.4</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals><goal>jar</goal></goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Stages (uploads) the artifact to oss.sonatype.org. -->
+			<plugin>
+				<groupId>org.sonatype.plugins</groupId>
+				<artifactId>nexus-staging-maven-plugin</artifactId>
+				<version>1.6.8</version>
+				<extensions>true</extensions>
+				<configuration>
+					 <serverId>ossrh</serverId>
+					 <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+					 <autoReleaseAfterClose>false</autoReleaseAfterClose>
+				</configuration>
+			</plugin>
+
+			<!-- Signs the artifacts with GPG (oss.sonatype.org requires that). -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>1.5</version>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals><goal>sign</goal></goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!--
+				Creates a JAR file containing the API documentation (javadoc) and an HTML help document for the
+				command line tool (MAINDOC).
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.10.4</version>
+				<executions>
+
+					<!-- Generate the API docs. -->
+					<execution>
+						<id>attach-javadocs</id>
+						<goals><goal>jar</goal></goals>
+
+						<configuration>
+							<header>${project.name} ${project.version}</header>
+							<footer>${project.name} ${project.version}</footer>
+							<source>8</source>
+							<javadocVersion>11</javadocVersion>
+							<additionalparam>-Xdoclint:none</additionalparam>
+							<quiet>true</quiet>
+							<tags>
+								<tag><name>ant.defaultValue</name>    <placement>a</placement><head>Default value:</head>              </tag>
+								<tag><name>ant.mandatory</name>       <placement>a</placement><head>This attribute is mandatory.</head></tag>
+								<tag><name>ant.subelementOrder</name> <placement>X</placement>                                         </tag>
+								<tag><name>ant.typeGroupHeading</name><placement>X</placement>                                         </tag>
+								<tag><name>ant.typeGroupName</name>   <placement>a</placement><head>Type group:</head>                 </tag>
+								<tag><name>ant.typeGroupSubdir</name> <placement>X</placement>                                         </tag>
+								<tag><name>ant.typeHeadingMf</name>   <placement>X</placement>                                         </tag>
+								<tag><name>ant.typeTitleMf</name>     <placement>X</placement>                                         </tag>
+								<tag><name>ant.valueExplanation</name><placement>a</placement><head>Value:</head>                      </tag>
+
+								<tag><name>main.commandLineOptions</name><placement>X</placement></tag>
+								<tag><name>main.commandLineOptionGroup</name><placement>a</placement><head>Option group:</head></tag>
+							</tags>
+						</configuration>
+					</execution>
+
+					<!-- Generate the command-line help doc ("MAINDOC"). -->
+					<execution>
+
+						<id>make-maindoc</id>
+						<phase>compile</phase>
+						<goals><goal>javadoc</goal></goals>
+
+						<configuration>
+							<useStandardDocletOptions>false</useStandardDocletOptions>
+							<additionalparam>-Xdoclint:none</additionalparam>
+
+							<quiet>true</quiet>
+
+							<doclet>de.unkrig.doclet.main.MainDoclet</doclet>
+							<docletArtifact>
+								<groupId>de.unkrig</groupId>
+								<artifactId>doclet-main</artifactId>
+								<version>1.0.4</version>
+							</docletArtifact>
+
+							<additionalparam>
+								-charset     UTF-8
+								-docencoding UTF-8
+							</additionalparam>
+
+							<destDir>../../classes</destDir>
+						</configuration>
+					</execution>
+
+					<!-- NOTICE: ANTDOC is generated by "zz-all", not here. -->
+				</executions>
+			</plugin>
+
+			<!--
+				Converts the an HTML help document into TXT format and stores it in "target/classes", so that
+				"-help" can print it.
+			-->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>1.5.0</version>
+
+				<dependencies>
+					<dependency>
+						<groupId>de.unkrig</groupId>
+						<artifactId>html2txt</artifactId>
+						<version>1.0.3</version>
+					</dependency>
+				</dependencies>
+
+				<executions><execution>
+
+					<id>html2txt-maindoc</id>
+					<phase>compile</phase>
+					<goals><goal>java</goal></goals>
+
+					<configuration>
+						<includePluginDependencies>true</includePluginDependencies>
+						<mainClass>de.unkrig.html2txt.Main</mainClass>
+						<arguments>
+							<argument>${basedir}/target/classes/${jar-with-dependencies.mainClass2}.main(String[]).html</argument>
+							<argument>${basedir}/target/classes/${jar-with-dependencies.mainClass2}.main(String[]).txt</argument>
+						</arguments>
+					</configuration>
+				</execution></executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+
+		<!-- Signs all artifacts with GPG (oss.sonatype.org requires that). -->
+		<profile>
+			<id>have_gpg</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+	<description>json-patch - A command-line tool for modifying YAML documents</description>
+
+	<organization>
+		<name>Arno Unkrig</name>
+		<url>https://unkrig.de/</url>
+	</organization>
+
+	<scm>
+		<url>https://github.com/aunkrig/json-patch</url>
+	</scm>
+
+	<licenses>
+		<license>
+			<name>New BSD License</name>
+			<url>https://raw.githubusercontent.com/aunkrig/json-patch/main/LICENSE</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<id>aunkrig</id>
+			<name>Arno Unkrig</name>
+			<roles>
+				<role>Developer</role>
+				<role>Release Manager</role>
+			</roles>
+		</developer>
+	</developers>
+</project>
