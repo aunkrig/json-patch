@@ -224,7 +224,7 @@
 		</profile>
 	</profiles>
 
-	<description>json-patch - A command-line tool for modifying YAML documents</description>
+	<description>json-patch - A command-line tool for modifying JSON documents</description>
 
 	<organization>
 		<name>Arno Unkrig</name>
