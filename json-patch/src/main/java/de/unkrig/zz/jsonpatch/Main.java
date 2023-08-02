@@ -34,8 +34,6 @@ import de.unkrig.commons.file.ExceptionHandler;
 import de.unkrig.commons.file.filetransformation.FileContentsTransformer;
 import de.unkrig.commons.file.filetransformation.FileTransformations;
 import de.unkrig.commons.file.filetransformation.FileTransformer.Mode;
-import de.unkrig.commons.file.org.apache.commons.compress.archivers.ArchiveFormatFactory;
-import de.unkrig.commons.file.org.apache.commons.compress.compressors.CompressionFormatFactory;
 import de.unkrig.commons.util.CommandLineOptionException;
 import de.unkrig.commons.util.CommandLineOptions;
 import de.unkrig.commons.util.annotation.CommandLineOption;
@@ -54,9 +52,6 @@ class Main {
      */
     @CommandLineOption public static void
     help() throws IOException {
-
-        System.setProperty("archive.formats",     ArchiveFormatFactory.allFormats().toString());
-        System.setProperty("compression.formats", CompressionFormatFactory.allFormats().toString());
 
         CommandLineOptions.printResource(Main.class, "main(String[]).txt", Charset.forName("UTF-8"), System.out);
 
@@ -174,7 +169,7 @@ class Main {
     }
 
     /**
-     * A command line utility that reads JSON documents from files, directories and archive entries and modifies them.
+     * A command line utility that modifies JSON documents.
      * <h2>Usage</h2>
      * <dl>
      *   <dt>{@code jsonpatch} [ <var>option</var> ... ]</dt>
@@ -185,17 +180,17 @@ class Main {
      *   <dd>
      *     Parse the literal <var>JSON-document</var>, modify it, and print it to STDOUT.
      *   </dd>
-     *   <dt>{@code jsonpatch} [ <var>option</var> ] <var>file-or-dir</var></dt>
+     *   <dt>{@code jsonpatch} [ <var>option</var> ] <var>file</var></dt>
      *   <dd>
-     *     Transforms <var>file-or-dir</var> in-place.
+     *     Transforms <var>file</var> in-place.
      *   </dd>
-     *   <dt>{@code jsonpatch} [ <var>option</var> ] <var>file-or-dir</var> <var>new-file-or-dir</var></dt>
+     *   <dt>{@code jsonpatch} [ <var>option</var> ] <var>file1</var> <var>file2</var></dt>
      *   <dd>
-     *     Read the JSON documents in <var>file-or-dir</var>, modify them, and write them to <var>new-file-or-dir</var>.
+     *     Read the JSON documents in <var>file1</var>, modify them, and write them to (existing or new) <var>file2</var>.
      *   </dd>
-     *   <dt>{@code jsonpatch} [ <var>option</var> ] <var>file-or-dir</var> ... <var>existing-dir</var></dt>
+     *   <dt>{@code jsonpatch} [ <var>option</var> ] <var>file</var> ... <var>existing-dir</var></dt>
      *   <dd>
-     *     Read the JSON documents in <var>file-or-dir</var>, modify them, and write them to files/dirs in <var>existing-dir</var>.
+     *     Read the JSON document in each <var>file</var>, modify it, and write it to a file in <var>existing-dir</var>.
      *   </dd>
      * </dl>
      *
@@ -210,12 +205,12 @@ class Main {
      *   Many of the options specify a path from the root of the JSON document to a node, as follows:
      * </p>
      * <dl>
-     *   <dt>{@code '.'} <var>object-member-name</var></dt>
+     *   <dt>{@code .}<var>object-member-name</var></dt>
      *   <dd>Use the given object member.</dd>
-     *   <dt>{@code [} <var>0 ... arraysize-1</var> {@code ]}</dt>
-     *   <dd>Use the array element with the given index index <var>n</var>.</dd>
-     *   <dt>{@code [} <var>-arraysize ... -1</var> {@code ]}</dt>
-     *   <dd>Use the array element with the given index plus <var>arraysize</var>.</dd>
+     *   <dt>{@code [}<var>0...arraySize-1</var>{@code ]}</dt>
+     *   <dd>Use the array element with the given index index.</dd>
+     *   <dt>{@code [}<var>-arraySize...-1</var>{@code ]}</dt>
+     *   <dd>Use the array element with the given index plus <var>arraySize</var>.</dd>
      * </dl>
      */
     public static void
@@ -232,7 +227,7 @@ class Main {
         } else
         if (args.length >= 1) {
 
-            // Transform a set of files, directory and archives, in-place or out-of-place.
+            // Transform a set of files, in-place or out-of-place.
             FileTransformations.transform(
                 args,                             // args
                 new FileContentsTransformer(      // fileTransformer
