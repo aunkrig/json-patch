@@ -31,7 +31,6 @@ import java.io.StringReader;
 import java.nio.charset.Charset;
 
 import de.unkrig.commons.file.ExceptionHandler;
-import de.unkrig.commons.file.filetransformation.FileContentsTransformer;
 import de.unkrig.commons.file.filetransformation.FileTransformations;
 import de.unkrig.commons.file.filetransformation.FileTransformer.Mode;
 import de.unkrig.commons.util.CommandLineOptionException;
@@ -59,19 +58,53 @@ class Main {
     }
 
     /**
-     * Wrap and indent json objects and arrays.
-     */
-    @CommandLineOption public void
-    prettyPrinting() { this.jsonPatch.setPrettyPrinting(true); }
-
-    /**
-     * If existing files would be overwritten, keep copies of the originals.
+     * For in-place transformations, keep copies of the originals
+     * @main.commandLineOptionGroup File-Processing
      */
     @CommandLineOption public void
     keep() { this.keepOriginals = true; }
 
     /**
-     * Adds or changes one array element or object member.
+     * Allow JSON data which does not strictly comply with the JSON specification.
+     * @main.commandLineOptionGroup File-Processing
+     */
+    @CommandLineOption public void
+    lenient() { this.jsonPatch.getGsonBuilder().setLenient(); }
+
+    /**
+     * Wrap and indent json objects and arrays.
+     * @main.commandLineOptionGroup Output-Generation
+     */
+    @CommandLineOption public void
+    prettyPrinting() { this.jsonPatch.getGsonBuilder().setPrettyPrinting(); }
+
+    /**
+     * Do not ampersand-escape HTML characters such as {@code <} and {@code >}.
+     * @main.commandLineOptionGroup Output-Generation
+     */
+    @CommandLineOption public void
+    disableHtmlEscaping() { this.jsonPatch.getGsonBuilder().disableHtmlEscaping(); }
+
+    /**
+     * Helper bean for {@link Main#addSet(SetOptions, String, String)}.
+     */
+    public static
+    class SetOptions {
+
+        public SetMode mode = SetMode.ANY;
+
+        @CommandLineOption public void existing()    { this.mode = SetMode.EXISTING; }
+        @CommandLineOption public void nonExisting() { this.mode = SetMode.NON_EXISTING; }
+    }
+
+    /**
+     * Add or change one array element or object member.
+     * <dl>
+     *   <dt>--existing</dt>
+     *   <dd>Verify that the object member resp. array element already exists</dd>
+     *   <dt>--non-existing</dt>
+     *   <dd>Verify that the object member resp. array element does not exist already</dd>
+     * </dl>
      * <p>
      *   The <var>spec</var> is formed as follows:
      * </p>
@@ -89,8 +122,9 @@ class Main {
      *   <dd>Change the array element with the given index plus <var>arraysize</var>.</dd>
      * </dl>
      * 
-     * @param setOptions         [ --existing | --non-existing ]
-     * @param jsonDocumentOrFile ( <var>json-document</var> | {@code @}<var>file-name</var> )
+     * @param setOptions            [ --existing | --non-existing ]
+     * @param jsonDocumentOrFile    ( <var>json-document</var> | {@code @}<var>file-name</var> )
+     * @main.commandLineOptionGroup File-Transformation
      */
     @CommandLineOption(cardinality = Cardinality.ANY) public void
     addSet(SetOptions setOptions, String spec, String jsonDocumentOrFile) throws IOException {
@@ -98,7 +132,22 @@ class Main {
     }
 
     /**
-     * Removes one array element or object member.
+     * Helper bean for {@link Main#addRemove(RemoveOptions, String)}.
+     */
+    public static
+    class RemoveOptions {
+
+        public RemoveMode mode = RemoveMode.ANY;
+
+        @CommandLineOption public void existing() { this.mode = RemoveMode.EXISTING; }
+    }
+
+    /**
+     * Remove one object member or array element.
+     * <dl>
+     *   <dt>--existing</dt>
+     *   <dd>Verify that the object member resp. array element already exists</dd>
+     * </dl>
      * <p>
      *   The <var>spec</var> is formed as follows:
      * </p>
@@ -111,7 +160,8 @@ class Main {
      *   <dd>Remove the array element with the given index plus <var>arraysize</var>.</dd>
      * </dl>
      * 
-     * @param removeOptions [ --existing ]
+     * @param removeOptions         [ --existing ]
+     * @main.commandLineOptionGroup File-Transformation
      */
     @CommandLineOption(cardinality = Cardinality.ANY) public void
     addRemove(RemoveOptions removeOptions, String spec) throws IOException {
@@ -119,7 +169,7 @@ class Main {
     }
 
     /**
-     * Inserts an element into an array.
+     * Insert an element into an array.
      * <p>
      *   The <var>spec</var> is formed as follows:
      * </p>
@@ -133,39 +183,12 @@ class Main {
      *   <dd>Insert before the element with the given index plus <var>arraysize</var>.</dd>
      * </dl>
      *
-     * @param jsonDocumentOrFile ( <var>json-document</var> | @<var>file</var> )
+     * @param jsonDocumentOrFile    ( <var>json-document</var> | @<var>file</var> )
+     * @main.commandLineOptionGroup File-Transformation
      */
     @CommandLineOption(cardinality = Cardinality.ANY) public void
     addInsert(String spec, String jsonDocumentOrFile) throws IOException {
         this.jsonPatch.addInsert(spec, JsonPatch.jsonDocumentOrFile(jsonDocumentOrFile));
-    }
-
-    public static
-    class SetOptions {
-
-        public SetMode mode = SetMode.ANY;
-
-        /**
-         * The object member or array element affected by the operation must exist (and is replaced).
-         */
-        @CommandLineOption public void setExisting()    { this.mode = SetMode.EXISTING; }
-        
-        /**
-         * The object member or array element affected by the operation must not exist (and is created).
-         */
-        @CommandLineOption public void setNonExisting() { this.mode = SetMode.NON_EXISTING; }
-    }
-
-
-    public static
-    class RemoveOptions {
-
-        public RemoveMode mode = RemoveMode.ANY;
-
-        /**
-         * The specified object member must exist.
-         */
-        @CommandLineOption public void setExisting() { this.mode = RemoveMode.EXISTING; }
     }
 
     /**
@@ -182,11 +205,11 @@ class Main {
      *   </dd>
      *   <dt>{@code jsonpatch} [ <var>option</var> ] <var>file</var></dt>
      *   <dd>
-     *     Transforms <var>file</var> in-place.
+     *     Transform the JSON document in <var>file</var> in-place.
      *   </dd>
      *   <dt>{@code jsonpatch} [ <var>option</var> ] <var>file1</var> <var>file2</var></dt>
      *   <dd>
-     *     Read the JSON documents in <var>file1</var>, modify them, and write them to (existing or new) <var>file2</var>.
+     *     Read the JSON document in <var>file1</var>, modify it, and write it to (existing or new) <var>file2</var>.
      *   </dd>
      *   <dt>{@code jsonpatch} [ <var>option</var> ] <var>file</var> ... <var>existing-dir</var></dt>
      *   <dd>
@@ -196,8 +219,24 @@ class Main {
      *
      * <h2>Options</h2>
      *
+     * <h3>General</h3>
      * <dl>
      * {@main.commandLineOptions}
+     * </dl>
+     *
+     * <h3>File processing</h3>
+     * <dl>
+     * {@main.commandLineOptions File-Processing}
+     * </dl>
+     *
+     * <h3>File transformation</h3>
+     * <dl>
+     * {@main.commandLineOptions File-Transformation}
+     * </dl>
+     *
+     * <h3>Output generation</h3>
+     * <dl>
+     * {@main.commandLineOptions Output-Generation}
      * </dl>
      *
      * <h2>Paths</h2>
@@ -220,28 +259,25 @@ class Main {
         Main main = new Main();
         args = CommandLineOptions.parse(args, main);
 
+        if (args.length == 0) {
+
+            // Transform JSON document from STDIN to STDOUT.
+            main.jsonPatch.contentsTransformer().transform("-", System.in, System.out);
+        } else
         if (args.length == 1 && args[0].startsWith("!")) {
 
             // Parse single command line argument as a JSON document, and transform it to STDOUT.
             main.jsonPatch.transform(new StringReader(args[0].substring(1)), System.out);
         } else
-        if (args.length >= 1) {
-
-            // Transform a set of files, in-place or out-of-place.
-            FileTransformations.transform(
-                args,                             // args
-                new FileContentsTransformer(      // fileTransformer
-                    main.jsonPatch.contentsTransformer(),
-                    main.keepOriginals
-                ),
-                Mode.TRANSFORM,                   // mode
-                ExceptionHandler.defaultHandler() // exceptionHandler
-            );
-        } else
         {
 
-            // Transform JSON document from STDIN to STDOUT.
-            main.jsonPatch.contentsTransformer().transform("-", System.in, System.out);
+            // Transform a set of files.
+            FileTransformations.transform(
+                args,                                               // args
+                main.jsonPatch.fileTransformer(main.keepOriginals), // fileTransformer
+                Mode.TRANSFORM,                                     // mode
+                ExceptionHandler.defaultHandler()                   // exceptionHandler
+            );
         }
     }
 }

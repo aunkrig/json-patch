@@ -51,6 +51,8 @@ import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 
 import de.unkrig.commons.file.contentstransformation.ContentsTransformer;
+import de.unkrig.commons.file.filetransformation.FileContentsTransformer;
+import de.unkrig.commons.file.filetransformation.FileTransformer;
 import de.unkrig.commons.io.OutputStreams;
 import de.unkrig.commons.lang.AssertionUtil;
 import de.unkrig.commons.lang.ExceptionUtil;
@@ -63,14 +65,14 @@ class JsonPatch {
         AssertionUtil.enableAssertionsForThisClass();
     }
 
-    private boolean                                           prettyPrinting;
+    private final GsonBuilder                                 gsonBuilder = new GsonBuilder();
     private final List<Transformer<JsonElement, JsonElement>> documentModifiers = new ArrayList<>();
 
     /**
      * If <var>value</var> is {@code true}, then wrap and indent json objects and arrays. Default is {@code false}.
      */
-    public void
-    setPrettyPrinting(boolean value) { this.prettyPrinting = value; }
+    public GsonBuilder
+    getGsonBuilder() { return this.gsonBuilder; }
 
     public void
     addSet(String spec, JsonElement value, SetMode mode) throws IOException {
@@ -288,19 +290,16 @@ class JsonPatch {
     public void
     transform(Reader in, OutputStream out) throws IOException {
 
+        Gson gson = this.gsonBuilder.create();
+
         // Read the document from the reader.
-        JsonReader jsonReader = new JsonReader(in);
-        jsonReader.setLenient(true);
+        JsonReader jsonReader = gson.newJsonReader(in);
         JsonElement e = JsonParser.parseReader(jsonReader);
 
-        for (Transformer<JsonElement, JsonElement> dm : JsonPatch.this.documentModifiers) {
-            e = dm.transform(e);
-        }
+        // Apply all configured "document modifiers".
+        for (Transformer<JsonElement, JsonElement> dm : JsonPatch.this.documentModifiers) e = dm.transform(e);
 
         // Write the document to the output stream.
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        if (JsonPatch.this.prettyPrinting) gsonBuilder = gsonBuilder.setPrettyPrinting();
-        Gson gson = gsonBuilder.create();
         try (Writer w = new OutputStreamWriter(OutputStreams.unclosable(out), StandardCharsets.UTF_8)) {
             w.write(gson.toJson(e));
         }
@@ -314,15 +313,18 @@ class JsonPatch {
             @Override public void
             transform(String path, InputStream is, OutputStream os) throws IOException {
 
-//                for(;;) System.err.println(System.in.read());
-
                 InputStreamReader r = new InputStreamReader(is, StandardCharsets.UTF_8);
                 
                 JsonPatch.this.transform(r, os);
             }
         };
     }
-    
+
+    public FileTransformer
+    fileTransformer(boolean keepOriginals) {
+        return new FileContentsTransformer(this.contentsTransformer(), keepOriginals);
+    }
+
     public static JsonElement
     jsonDocumentOrFile(String jsonDocumentOrFile) throws IOException, FileNotFoundException {
         
