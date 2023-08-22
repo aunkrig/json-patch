@@ -27,7 +27,7 @@
 package de.unkrig.zz.jsonpatch;
 
 public
-class SpecMatchException extends RuntimeException{
+class SpecMatchException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
