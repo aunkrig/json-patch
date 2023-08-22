@@ -74,18 +74,27 @@ class JsonPatch {
     public GsonBuilder
     getGsonBuilder() { return this.gsonBuilder; }
 
+    /**
+     * @see #set(JsonElement, String, JsonElement, SetMode)
+     */
     public void
     addSet(String spec, JsonElement value, SetMode mode) throws IOException {
         this.documentModifiers.add(root -> this.set(root, spec, value, mode));
     }
     public static enum SetMode { ANY, EXISTING, NON_EXISTING }
-    
+
+    /**
+     * @see #remove(JsonElement, String, RemoveMode)
+     */
     public void
     addRemove(String spec, RemoveMode mode) {
         this.documentModifiers.add(root -> this.remove(root, spec, mode));
     }
     public static enum RemoveMode { ANY, EXISTING }
 
+    /**
+     * @see #insert(JsonElement, String, JsonElement)
+     */
     public void
     addInsert(String spec, JsonElement value) {
         this.documentModifiers.add(root -> this.insert(root, spec, value));
@@ -94,14 +103,11 @@ class JsonPatch {
     /**
      * Adds or changes one array element or object member.
      * 
-     * @throws IndexOutOfBoundsException <var>mode</var> is {@code EXISTING}, and the specified array index is out of
-     *                                   range
-     * @throws IndexOutOfBoundsException <var>mode</var> is {@code NON_EXISTING}, and the specified array index does not
-     *                                   equal the array size
-     * @throws IllegalArgumentException  <var>mode</var> is {@code EXISTING}, and the specified object member does not
-     *                                   exist
-     * @throws IllegalArgumentException  <var>mode</var> is {@code NON_EXISTING}, and the specified object member does
-     *                                   exist
+     * @throws SpecMatchException <var>mode</var> is {@code EXISTING}, and the specified array index is out of range
+     * @throws SpecMatchException <var>mode</var> is {@code NON_EXISTING}, and the specified array index does not
+     *                            equal the array size
+     * @throws SpecMatchException <var>mode</var> is {@code EXISTING}, and the specified object member does not exist
+     * @throws SpecMatchException <var>mode</var> is {@code NON_EXISTING}, and the specified object member does exist
      */
     public JsonElement
     set(JsonElement root, String spec, JsonElement value, SetMode mode) {
@@ -119,10 +125,10 @@ class JsonPatch {
                 case ANY:
                     break;
                 case EXISTING:
-                    if (!jsonObject.has(memberName)) throw new IllegalArgumentException("Member \"" + memberName + "\" does not exist");
+                    if (!jsonObject.has(memberName)) throw new SpecMatchException("Member \"" + memberName + "\" does not exist");
                     break;
                 case NON_EXISTING:
-                    if (jsonObject.has(memberName)) throw new IllegalArgumentException("Member \"" + memberName + "\" already exists");
+                    if (jsonObject.has(memberName)) throw new SpecMatchException("Member \"" + memberName + "\" already exists");
                     break;
                 }
                 jsonObject.add(memberName, value);
@@ -134,10 +140,10 @@ class JsonPatch {
                 case ANY:
                     break;
                 case EXISTING:
-                    if (index >= jsonArray.size()) throw new IndexOutOfBoundsException("Array index " + index + " too large");
+                    if (index < 0 || index >= jsonArray.size()) throw new SpecMatchException("Array index " + index + " is out of range");
                     break;
                 case NON_EXISTING:
-                    if (index != jsonArray.size()) throw new IndexOutOfBoundsException("Index " + index + " not equal to array size");
+                    if (index != jsonArray.size()) throw new SpecMatchException("Index " + index + " not equal to array size");
                     break;
                 }
                 if (index == jsonArray.size()) {
@@ -154,10 +160,9 @@ class JsonPatch {
     /**
      * Removes one array element or object member.
      * 
-     * @param mode                       (Irrelevant if an array element is specified)
-     * @throws IndexOutOfBoundsException The specified array index is out of range (-arraySize ... arraySize-1)
-     * @throws IllegalArgumentException  <var>mode</var> is {@code EXISTING}, and the specified object member does not
-     *                                   exist
+     * @param mode                (Irrelevant if an array element is specified)
+     * @throws SpecMatchException The specified array index is out of range (-arraySize ... arraySize-1)
+     * @throws SpecMatchException <var>mode</var> is {@code EXISTING}, and the specified object member does not exist
      */
     public JsonElement
     remove(JsonElement root, String spec, RemoveMode mode) {
@@ -166,11 +171,17 @@ class JsonPatch {
             
             public void
             handleObjectMember(JsonObject jsonObject, String memberName) {
-                if (jsonObject.remove(memberName) == null && mode == RemoveMode.EXISTING) throw new IllegalArgumentException("Member \"" + memberName + "\" does not exist");
+
+                JsonElement prev = jsonObject.remove(memberName);
+
+                if (prev == null && mode == RemoveMode.EXISTING) {
+                    throw new SpecMatchException("Member \"" + memberName + "\" does not exist");
+                }
             }
             
             public void
             handleArrayElement(JsonArray jsonArray, int index) {
+                if (index < 0 || index >= jsonArray.size()) throw new SpecMatchException("Array index " + index + " is out of range");
                 jsonArray.remove(index);
             }
         });
@@ -181,8 +192,8 @@ class JsonPatch {
     /**
      * Inserts an element into an array.
      *
-     * @throws IndexOutOfBoundsException The specified array index is out of range (-arraySize ... arraySize)
-     * @throws IllegalArgumentException  The <var>spec</var> specified an object member (and not an array element)
+     * @throws SpecMatchException The specified array index is out of range (-arraySize ... arraySize)
+     * @throws SpecMatchException The <var>spec</var> specified an object member (and not an array element)
      */
     public JsonElement
     insert(JsonElement root, String spec, JsonElement value) {
@@ -191,7 +202,7 @@ class JsonPatch {
 
             public void
             handleObjectMember(JsonObject jsonObject, String memberName) {
-                throw new IllegalArgumentException("Cannot insert into object; use SET instead");
+                throw new SpecMatchException("Cannot insert into object; use SET instead");
             }
 
             public void
@@ -199,7 +210,7 @@ class JsonPatch {
 
                 // "JsonArray" has no "insert()" method; thus temporarily remove all elements at and after the index,
                 // then add the value, then add the previously removed elements.
-                if (index < 0 || index > jsonArray.size()) throw new IndexOutOfBoundsException(Integer.toString(index));
+                if (index < 0 || index > jsonArray.size()) throw new SpecMatchException("Array index " + index + " is out of range");
                 List<JsonElement> tmp = new ArrayList<>();
                 while (jsonArray.size() > index) tmp.add(jsonArray.remove(index));
                 jsonArray.add(value);
@@ -276,7 +287,7 @@ class JsonPatch {
                     s = s.substring(m.end());
                 } else
                 {
-                    throw new IllegalArgumentException("Invalid spec \"" + s + "\"");
+                    throw new SpecSyntaxException("Invalid spec \"" + s + "\"");
                 }
             } catch (RuntimeException e) {
                 throw ExceptionUtil.wrap(
