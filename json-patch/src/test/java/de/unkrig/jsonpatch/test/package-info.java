@@ -1,6 +1,6 @@
 
 /*
- * json-patch - A command-line tool for modifying JSON documents
+ * de.unkrig.commons - A general-purpose Java class library
  *
  * Copyright (c) 2023, Arno Unkrig
  * All rights reserved.
@@ -24,12 +24,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.unkrig.zz.jsonpatch;
+@NotNullByDefault
+package de.unkrig.jsonpatch.test;
 
-public
-class SpecMatchException extends RuntimeException {
+import de.unkrig.commons.nullanalysis.NotNullByDefault;
 
-    private static final long serialVersionUID = 1L;
-
-    public SpecMatchException(String message) { super(message); }
-}

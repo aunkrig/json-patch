@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.unkrig.zz.jsonpatch;
+package de.unkrig.jsonpatch;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -37,8 +37,8 @@ import de.unkrig.commons.util.CommandLineOptionException;
 import de.unkrig.commons.util.CommandLineOptions;
 import de.unkrig.commons.util.annotation.CommandLineOption;
 import de.unkrig.commons.util.annotation.CommandLineOption.Cardinality;
-import de.unkrig.zz.jsonpatch.JsonPatch.RemoveMode;
-import de.unkrig.zz.jsonpatch.JsonPatch.SetMode;
+import de.unkrig.jsonpatch.JsonPatch.RemoveMode;
+import de.unkrig.jsonpatch.JsonPatch.SetMode;
 
 public
 class Main {

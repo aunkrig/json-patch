@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.unkrig.zz.jsonpatch;
+package de.unkrig.jsonpatch;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

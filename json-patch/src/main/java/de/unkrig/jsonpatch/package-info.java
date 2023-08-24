@@ -24,8 +24,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * Helpers for text-related tasks.
+ */
 @NotNullByDefault
-package de.unkrig.zz.jsonpatch.test;
+package de.unkrig.jsonpatch;
 
 import de.unkrig.commons.nullanalysis.NotNullByDefault;
 

@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.unkrig.zz.jsonpatch.test;
+package de.unkrig.jsonpatch.test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
@@ -38,9 +38,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 
-import de.unkrig.zz.jsonpatch.JsonPatch;
-import de.unkrig.zz.jsonpatch.JsonPatch.RemoveMode;
-import de.unkrig.zz.jsonpatch.JsonPatch.SetMode;
+import de.unkrig.jsonpatch.JsonPatch;
+import de.unkrig.jsonpatch.JsonPatch.RemoveMode;
+import de.unkrig.jsonpatch.JsonPatch.SetMode;
+import de.unkrig.jsonpatch.SpecMatchException;
 
 /**
  * Test cases for {@link JsonPatch}.
@@ -79,7 +80,7 @@ class JsonPatchTests {
         assertJsonPatchEquals(jsonPatch, "{\"a\":\"B\"}", "{ \"a\": \"b\" }");
     }
     
-    @Test(expected = IllegalArgumentException.class) public void
+    @Test(expected = SpecMatchException.class) public void
     testSetExistingObjectMember2() throws Exception {
         JsonPatch jsonPatch = new JsonPatch();
         jsonPatch.addSet(".c", jsonDocument("\"B\""), SetMode.EXISTING);
@@ -88,7 +89,7 @@ class JsonPatchTests {
 
     // Setting a non-existent object member.
 
-    @Test(expected = IllegalArgumentException.class) public void
+    @Test(expected = SpecMatchException.class) public void
     testSetNonExistingObjectMember1() throws Exception {
         JsonPatch jsonPatch = new JsonPatch();
         jsonPatch.addSet(".a", jsonDocument("\"B\""), SetMode.NON_EXISTING);
@@ -134,7 +135,7 @@ class JsonPatchTests {
 
     // Setting an existing array element.
 
-    @Test(expected = IndexOutOfBoundsException.class) public void
+    @Test(expected = SpecMatchException.class) public void
     testSetExistingArrayElement1() throws Exception {
         JsonPatch jsonPatch = new JsonPatch();
         jsonPatch.addSet("[]", jsonDocument("4"), SetMode.EXISTING);
@@ -155,7 +156,7 @@ class JsonPatchTests {
         assertJsonPatchEquals(jsonPatch, "[1,22,3]", "[ 1, 2, 3 ]");
     }
     
-    @Test(expected = IndexOutOfBoundsException.class) public void
+    @Test(expected = SpecMatchException.class) public void
     testSetExistingArrayElement4() throws Exception {
         JsonPatch jsonPatch = new JsonPatch();
         jsonPatch.addSet("[3]", jsonDocument("4"), SetMode.EXISTING);
@@ -171,14 +172,14 @@ class JsonPatchTests {
         assertJsonPatchEquals(jsonPatch, "[1,2,3,4]", "[ 1, 2, 3 ]");
     }
     
-    @Test(expected = IndexOutOfBoundsException.class) public void
+    @Test(expected = SpecMatchException.class) public void
     testSetNonExistingArrayElement2() throws Exception {
         JsonPatch jsonPatch = new JsonPatch();
         jsonPatch.addSet("[1]", jsonDocument("22"), SetMode.NON_EXISTING);
         jsonPatch(jsonPatch, "[ 1, 2, 3 ]");
     }
     
-    @Test(expected = IndexOutOfBoundsException.class) public void
+    @Test(expected = SpecMatchException.class) public void
     testSetNonExistingArrayElement3() throws Exception {
         JsonPatch jsonPatch = new JsonPatch();
         jsonPatch.addSet("[-2]", jsonDocument("22"), SetMode.NON_EXISTING);
@@ -222,7 +223,7 @@ class JsonPatchTests {
         assertJsonPatchEquals(jsonPatch, "[1,2,3,99]", "[ 1, 2, 3 ]");
     }
     
-    @Test(expected = IndexOutOfBoundsException.class) public void
+    @Test(expected = SpecMatchException.class) public void
     testInsertArrayElement5() throws Exception {
         JsonPatch jsonPatch = new JsonPatch();
         jsonPatch.addInsert("[4]", jsonDocument("99"));
@@ -245,7 +246,7 @@ class JsonPatchTests {
         assertJsonPatchEquals(jsonPatch, "{\"a\":1,\"b\":2,\"c\":3}", "{\"a\":1,\"b\":2,\"c\":3}");
     }
     
-    @Test(expected = IllegalArgumentException.class) public void
+    @Test(expected = SpecMatchException.class) public void
     testRemoveObjectMember3() throws Exception {
         JsonPatch jsonPatch = new JsonPatch();
         jsonPatch.addRemove(".d", RemoveMode.EXISTING);
@@ -268,7 +269,7 @@ class JsonPatchTests {
         assertJsonPatchEquals(jsonPatch, "[1,3]", "[ 1, 2, 3 ]");
     }
     
-    @Test(expected = IndexOutOfBoundsException.class) public void
+    @Test(expected = SpecMatchException.class) public void
     testRemoveArrayElement3() throws Exception {
         JsonPatch jsonPatch = new JsonPatch();
         jsonPatch.addRemove("[-4]", RemoveMode.ANY);
