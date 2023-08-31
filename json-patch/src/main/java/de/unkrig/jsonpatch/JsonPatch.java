@@ -347,9 +347,9 @@ class JsonPatch {
     private static Reader
     stringOrFileReader(String value) throws FileNotFoundException {
         return (
-            value.startsWith("@")
-            ? new InputStreamReader(new FileInputStream(value.substring(1)), StandardCharsets.UTF_8)
-            : new StringReader(value)
+        	"-".equals(value) ? new InputStreamReader(System.in, StandardCharsets.UTF_8) :
+            !value.startsWith("@") ? new StringReader(value) :
+            new InputStreamReader(new FileInputStream(value.substring(1)), StandardCharsets.UTF_8)
         );
     }
 

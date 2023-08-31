@@ -36,6 +36,7 @@ import de.unkrig.commons.file.filetransformation.FileTransformer.Mode;
 import de.unkrig.commons.util.CommandLineOptionException;
 import de.unkrig.commons.util.CommandLineOptions;
 import de.unkrig.commons.util.annotation.CommandLineOption;
+import de.unkrig.commons.util.annotation.CommandLineOptionGroup;
 import de.unkrig.commons.util.annotation.CommandLineOption.Cardinality;
 import de.unkrig.jsonpatch.JsonPatch.RemoveMode;
 import de.unkrig.jsonpatch.JsonPatch.SetMode;
@@ -43,8 +44,10 @@ import de.unkrig.jsonpatch.JsonPatch.SetMode;
 public
 class Main {
 
+	// ========================================== CONFIGURATION ==========================================
     private final JsonPatch jsonPatch = new JsonPatch();
-    private boolean keepOriginals;
+    private boolean         keepOriginals;
+    // ========================================== END CONFIGURATION ==========================================
 
     /**
      * Print this text and terminate.
@@ -58,7 +61,7 @@ class Main {
     }
 
     /**
-     * For in-place transformations, keep copies of the originals
+     * For in-place file transformations, keep copies of the originals.
      * @main.commandLineOptionGroup File-Processing
      */
     @CommandLineOption public void
@@ -85,17 +88,16 @@ class Main {
     @CommandLineOption public void
     disableHtmlEscaping() { this.jsonPatch.getGsonBuilder().disableHtmlEscaping(); }
 
-    /**
-     * Helper bean for {@link Main#addSet(SetOptions, String, String)}.
-     */
+    /** Suboptions for {@link Main#addSet(SetOptions, String, String)}. */
     public static
     class SetOptions {
 
         public SetMode mode = SetMode.ANY;
 
-        @CommandLineOption public void existing()    { this.mode = SetMode.EXISTING; }
-        @CommandLineOption public void nonExisting() { this.mode = SetMode.NON_EXISTING; }
+        @CommandLineOption(group = ExistingXorNonExisting.class) public void existing()    { this.mode = SetMode.EXISTING; }
+        @CommandLineOption(group = ExistingXorNonExisting.class) public void nonExisting() { this.mode = SetMode.NON_EXISTING; }
     }
+    @CommandLineOptionGroup public interface ExistingXorNonExisting {}
 
     /**
      * Add or change one array element or object member.
@@ -123,7 +125,7 @@ class Main {
      * </dl>
      * 
      * @param setOptions            [ --existing | --non-existing ]
-     * @param jsonDocumentOrFile    ( <var>json-document</var> | {@code @}<var>file-name</var> )
+     * @param jsonDocumentOrFile    ( <var>json-document</var> | {@code @}<var>file-name</var> | "-" )
      * @main.commandLineOptionGroup File-Transformation
      */
     @CommandLineOption(cardinality = Cardinality.ANY) public void
@@ -131,9 +133,7 @@ class Main {
         this.jsonPatch.addSet(spec, JsonPatch.jsonDocumentOrFile(jsonDocumentOrFile), setOptions.mode);
     }
 
-    /**
-     * Helper bean for {@link Main#addRemove(RemoveOptions, String)}.
-     */
+    /**Suboptions for {@link Main#addRemove(RemoveOptions, String)}. */
     public static
     class RemoveOptions {
 
@@ -183,7 +183,7 @@ class Main {
      *   <dd>Insert before the element with the given index plus <var>arraysize</var>.</dd>
      * </dl>
      *
-     * @param jsonDocumentOrFile    ( <var>json-document</var> | @<var>file</var> )
+     * @param jsonDocumentOrFile    ( <var>json-document</var> | @<var>file</var> | "-")
      * @main.commandLineOptionGroup File-Transformation
      */
     @CommandLineOption(cardinality = Cardinality.ANY) public void
@@ -205,7 +205,7 @@ class Main {
      *   </dd>
      *   <dt>{@code jsonpatch} [ <var>option</var> ] <var>file</var></dt>
      *   <dd>
-     *     Transform the JSON document in <var>file</var> in-place.
+     *     Transform the JSON document in <var>file</var> to STDOUT.
      *   </dd>
      *   <dt>{@code jsonpatch} [ <var>option</var> ] <var>file1</var> <var>file2</var></dt>
      *   <dd>
@@ -259,22 +259,17 @@ class Main {
         Main main = new Main();
         args = CommandLineOptions.parse(args, main);
 
-        if (args.length == 0) {
-
-            // Transform JSON document from STDIN to STDOUT.
-            main.jsonPatch.contentsTransformer().transform("-", System.in, System.out);
-        } else
         if (args.length == 1 && args[0].startsWith("!")) {
 
             // Parse single command line argument as a JSON document, and transform it to STDOUT.
             main.jsonPatch.transform(new StringReader(args[0].substring(1)), System.out);
         } else
         {
-
-            // Transform a set of files.
             FileTransformations.transform(
                 args,                                               // args
+                true,                                               // unixMode
                 main.jsonPatch.fileTransformer(main.keepOriginals), // fileTransformer
+                main.jsonPatch.contentsTransformer(),               // contentsTransformer
                 Mode.TRANSFORM,                                     // mode
                 ExceptionHandler.defaultHandler()                   // exceptionHandler
             );
