@@ -65,14 +65,14 @@ class Main {
 
     /**
      * For in-place file transformations, keep copies of the originals.
-     * @main.commandLineOptionGroup File-Processing
+     * @main.commandLineOptionGroup Input-Processing
      */
     @CommandLineOption public void
     keep() { this.keepOriginals = true; }
 
     /**
      * Input encoding charset (default UTF-8)
-     * @main.commandLineOptionGroup File-Processing
+     * @main.commandLineOptionGroup Input-Processing
      */
     @CommandLineOption public void
     setInCharset(Charset inCharset) { this.inCharset = inCharset; }
@@ -86,7 +86,7 @@ class Main {
 
     /**
      * Allow JSON data which does not strictly comply with the JSON specification.
-     * @main.commandLineOptionGroup File-Processing
+     * @main.commandLineOptionGroup Input-Processing
      */
     @CommandLineOption public void
     lenient() { this.jsonPatch.getGsonBuilder().setLenient(); }
@@ -143,7 +143,7 @@ class Main {
      * 
      * @param setOptions            [ --existing | --non-existing ]
      * @param jsonDocumentOrFile    ( <var>json-document</var> | {@code @}<var>file-name</var> | "-" )
-     * @main.commandLineOptionGroup File-Transformation
+     * @main.commandLineOptionGroup Document-Transformation
      */
     @CommandLineOption(cardinality = Cardinality.ANY) public void
     addSet(SetOptions setOptions, String spec, String jsonDocumentOrFile) throws IOException {
@@ -178,7 +178,7 @@ class Main {
      * </dl>
      * 
      * @param removeOptions         [ --existing ]
-     * @main.commandLineOptionGroup File-Transformation
+     * @main.commandLineOptionGroup Document-Transformation
      */
     @CommandLineOption(cardinality = Cardinality.ANY) public void
     addRemove(RemoveOptions removeOptions, String spec) throws IOException {
@@ -201,7 +201,7 @@ class Main {
      * </dl>
      *
      * @param jsonDocumentOrFile    ( <var>json-document</var> | @<var>file</var> | "-")
-     * @main.commandLineOptionGroup File-Transformation
+     * @main.commandLineOptionGroup Document-Transformation
      */
     @CommandLineOption(cardinality = Cardinality.ANY) public void
     addInsert(String spec, String jsonDocumentOrFile) throws IOException {
@@ -241,14 +241,14 @@ class Main {
      * {@main.commandLineOptions}
      * </dl>
      *
-     * <h3>File processing</h3>
+     * <h3>Input processing</h3>
      * <dl>
-     * {@main.commandLineOptions File-Processing}
+     * {@main.commandLineOptions Input-Processing}
      * </dl>
      *
-     * <h3>File transformation</h3>
+     * <h3>Document transformation</h3>
      * <dl>
-     * {@main.commandLineOptions File-Transformation}
+     * {@main.commandLineOptions Document-Transformation}
      * </dl>
      *
      * <h3>Output generation</h3>
