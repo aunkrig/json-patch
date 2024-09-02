@@ -28,6 +28,7 @@ package de.unkrig.jsonpatch;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -36,7 +37,7 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.Writer;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -299,7 +300,7 @@ class JsonPatch {
     }
 
     public void
-    transform(Reader in, OutputStream out) throws IOException {
+    transform(Reader in, OutputStream out, Charset outCharset) throws IOException {
 
         Gson gson = this.gsonBuilder.create();
 
@@ -311,45 +312,66 @@ class JsonPatch {
         for (Transformer<JsonElement, JsonElement> dm : JsonPatch.this.documentModifiers) e = dm.transform(e);
 
         // Write the document to the output stream.
-        try (Writer w = new OutputStreamWriter(OutputStreams.unclosable(out), StandardCharsets.UTF_8)) {
+        try (Writer w = new OutputStreamWriter(OutputStreams.unclosable(out), outCharset)) {
             w.write(gson.toJson(e));
         }
     }
 
     public ContentsTransformer
-    contentsTransformer() {
+    contentsTransformer(Charset inCharset, Charset outCharset) {
 
         return new ContentsTransformer() {
             
             @Override public void
             transform(String path, InputStream is, OutputStream os) throws IOException {
 
-                InputStreamReader r = new InputStreamReader(is, StandardCharsets.UTF_8);
+                InputStreamReader r = new InputStreamReader(is, inCharset);
                 
-                JsonPatch.this.transform(r, os);
+                JsonPatch.this.transform(r, os, outCharset);
             }
         };
     }
 
     public FileTransformer
-    fileTransformer(boolean keepOriginals) {
-        return new FileContentsTransformer(this.contentsTransformer(), keepOriginals);
+    fileTransformer(Charset inCharset, Charset outCharset, boolean keepOriginals) {
+        return new FileContentsTransformer(this.contentsTransformer(inCharset, outCharset), keepOriginals);
     }
 
+    /**
+     * Iff <var>jsonDocumentOrFile</var> does not start with {@code "@"}, parse it as a JSON document and return that.
+     * <p>
+     *   Iff <var>jsonDocumentOrFile</var> does start with {@code "@"}, take the letters following the "@" as a file
+     *   name, open that file for reading, parse its contents as a JSON document and return that.
+     * </p>
+     */
     public static JsonElement
-    jsonDocumentOrFile(String jsonDocumentOrFile) throws IOException, FileNotFoundException {
+    jsonDocumentOrFile(String jsonDocumentOrFile, Charset fileCharset) throws IOException, FileNotFoundException {
         
-        try (Reader r = JsonPatch.stringOrFileReader(jsonDocumentOrFile)) {
+        try (Reader r = JsonPatch.stringOrFileReader(jsonDocumentOrFile, fileCharset)) {
             return parseJson(r);
         }
     }
 
+    /**
+     * Iff <var>documentOrFile</var> equals {@code "-"}, return a {@link Reader} for {@code System.out}.
+     * <p>
+     *   Iff <var>documentOrFile</var> start with {@code "@"}, take the letters following the "@" as a file
+     *   name, open that file for reading, and return a {@link FileReader} with the given {@link Charset}.
+     * </p>
+     * <p>
+     *   Otherwise, return a {@link StringReader} on the <var>documentOrFile</var> string.
+     * </p>
+     * 
+     * @param fileCharset Used iff <var>documentOrFile</var> starts with {@code "@"}
+     */
     private static Reader
-    stringOrFileReader(String value) throws FileNotFoundException {
+    stringOrFileReader(String documentOrFile, Charset fileCharset) throws FileNotFoundException {
         return (
-        	"-".equals(value) ? new InputStreamReader(System.in, StandardCharsets.UTF_8) :
-            !value.startsWith("@") ? new StringReader(value) :
-            new InputStreamReader(new FileInputStream(value.substring(1)), StandardCharsets.UTF_8)
+        	"-".equals(documentOrFile)
+        	? new InputStreamReader(System.in) // "System.in" is platform-default-encoded.
+            : documentOrFile.startsWith("@")
+            ? new InputStreamReader(new FileInputStream(documentOrFile.substring(1)), fileCharset)
+    		: new StringReader(documentOrFile)
         );
     }
 

@@ -29,6 +29,7 @@ package de.unkrig.jsonpatch;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import de.unkrig.commons.file.ExceptionHandler;
 import de.unkrig.commons.file.filetransformation.FileTransformations;
@@ -45,8 +46,10 @@ public
 class Main {
 
 	// ========================================== CONFIGURATION ==========================================
-    private final JsonPatch jsonPatch = new JsonPatch();
+	private Charset         inCharset  = StandardCharsets.UTF_8;
+	private Charset         outCharset = StandardCharsets.UTF_8;
     private boolean         keepOriginals;
+    private final JsonPatch jsonPatch = new JsonPatch();
     // ========================================== END CONFIGURATION ==========================================
 
     /**
@@ -66,6 +69,20 @@ class Main {
      */
     @CommandLineOption public void
     keep() { this.keepOriginals = true; }
+
+    /**
+     * Input encoding charset (default UTF-8)
+     * @main.commandLineOptionGroup File-Processing
+     */
+    @CommandLineOption public void
+    setInCharset(Charset inCharset) { this.inCharset = inCharset; }
+
+    /**
+     * Output encoding charset (default UTF-8)
+     * @main.commandLineOptionGroup Output-Generation
+     */
+    @CommandLineOption public void
+    setOutCharset(Charset outCharset) { this.outCharset = outCharset; }
 
     /**
      * Allow JSON data which does not strictly comply with the JSON specification.
@@ -130,7 +147,7 @@ class Main {
      */
     @CommandLineOption(cardinality = Cardinality.ANY) public void
     addSet(SetOptions setOptions, String spec, String jsonDocumentOrFile) throws IOException {
-        this.jsonPatch.addSet(spec, JsonPatch.jsonDocumentOrFile(jsonDocumentOrFile), setOptions.mode);
+        this.jsonPatch.addSet(spec, JsonPatch.jsonDocumentOrFile(jsonDocumentOrFile, this.inCharset), setOptions.mode);
     }
 
     /**Suboptions for {@link Main#addRemove(RemoveOptions, String)}. */
@@ -188,7 +205,7 @@ class Main {
      */
     @CommandLineOption(cardinality = Cardinality.ANY) public void
     addInsert(String spec, String jsonDocumentOrFile) throws IOException {
-        this.jsonPatch.addInsert(spec, JsonPatch.jsonDocumentOrFile(jsonDocumentOrFile));
+        this.jsonPatch.addInsert(spec, JsonPatch.jsonDocumentOrFile(jsonDocumentOrFile, this.inCharset));
     }
 
     /**
@@ -262,16 +279,15 @@ class Main {
         if (args.length == 1 && args[0].startsWith("!")) {
 
             // Parse single command line argument as a JSON document, and transform it to STDOUT.
-            main.jsonPatch.transform(new StringReader(args[0].substring(1)), System.out);
-        } else
-        {
+            main.jsonPatch.transform(new StringReader(args[0].substring(1)), System.out, main.outCharset);
+        } else {
             FileTransformations.transform(
-                args,                                               // args
-                true,                                               // unixMode
-                main.jsonPatch.fileTransformer(main.keepOriginals), // fileTransformer
-                main.jsonPatch.contentsTransformer(),               // contentsTransformer
-                Mode.TRANSFORM,                                     // mode
-                ExceptionHandler.defaultHandler()                   // exceptionHandler
+                args,                                                                                // args
+                true,                                                                                // unixMode
+                main.jsonPatch.fileTransformer(main.inCharset, main.outCharset, main.keepOriginals), // fileTransformer
+                main.jsonPatch.contentsTransformer(main.inCharset, main.outCharset),                 // contentsTransformer
+                Mode.TRANSFORM,                                                                      // mode
+                ExceptionHandler.defaultHandler()                                                    // exceptionHandler
             );
         }
     }

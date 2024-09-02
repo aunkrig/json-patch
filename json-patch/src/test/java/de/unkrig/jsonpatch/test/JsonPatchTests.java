@@ -30,6 +30,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.charset.Charset;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -291,7 +292,7 @@ class JsonPatchTests {
     jsonPatch(JsonPatch jsonPatch, String in) throws IOException {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        jsonPatch.transform(new StringReader(in), baos);
+        jsonPatch.transform(new StringReader(in), baos, Charset.defaultCharset());
         return baos.toString();
     }
 
